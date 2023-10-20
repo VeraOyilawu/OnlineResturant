@@ -9,6 +9,9 @@ const emailSender = async (options)=>{
         auth: {
           user: "alexandravera789@gmail.com",
           pass: "vzfzpgznmargflne"
+        },
+        tls: {
+          rejectUnauthorized: false
         }
       });
     const mailOptions = {

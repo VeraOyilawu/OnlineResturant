@@ -26,9 +26,13 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: false
     },
+    isLogin: {
+        type: String,
+        default: false
+    },
     Otp: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "otp"
+        type: String,
+        require: true
     }
 },  {timeStamp: true}
 )

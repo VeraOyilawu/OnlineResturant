@@ -1,10 +1,11 @@
 const userModel = require("../Models/userModel")
 const emailSender = require("../utils/emailSender")
-const otpModel = require("../Models/otpModel")
 const bcrypt = require("bcrypt")
 const otpGenerator = require("otp-generator")
 const jwt = require("jsonwebtoken")
 const sendMail = require("../utils/emailTem")
+const forgerMail = require("../utils/forgetTem")
+const { use } = require("../Routers/userRout")
 const dotenv = require('dotenv').config();
 
 
@@ -25,11 +26,7 @@ const SignIn = async(req, res) => {
             upperCaseAlphabets: false,
             specialChars: false
         }).replace(/\D/g, '');
-
-        const userOtp = new otpModel({
-            otp: OTP
-        })
-        const savedOtp = await userOtp.save();
+        
 
 
         if (password !== comfirmPassword){
@@ -37,17 +34,16 @@ const SignIn = async(req, res) => {
                 message: "Your password has to be the same with your confirmPassword"
             })
         } else {
-            // const salt = await bcrypt.genSalt(10);
-            // const hashPassword = await bcrypt.hash(password, salt);
-            // // const salt = await bcrypt.genSalt(10)
-            // // const hashPassword = bcrypt.hash(password, salt)
+            const salt = await bcrypt.genSalt(10);
+            const hashPassword = await bcrypt.hash(password, salt);
+           
 
             const reqBody = await new userModel({
                 userName, 
                 email, 
-                password,
-                comfirmPassword,
-                otp: savedOtp._id
+                password: hashPassword,
+                comfirmPassword: hashPassword,
+                Otp: OTP
             })
 
             const savedUser = await reqBody.save()
@@ -62,17 +58,9 @@ const SignIn = async(req, res) => {
                 html
             })
 
-
-            // const subject = 'Email Verification'
-            // const html = sendMail(OTP)
-            // mailer({
-            //     email: savedUser.email,
-            //     subject,
-            //     html
-            // })
-            
             res.status(200).json({
                 message: `${savedUser.userName} is registered sucessfully`,
+                dat: savedUser,
                 data: token
             })
 
@@ -103,7 +91,8 @@ const verification = async(req, res) => {
            }
        }
 
-       const {email} = jwt.verify(token, process.env.Secret)
+       const {email} = jwt.verify( token, process.env.Secret )
+
        const user = await userModel.findOne({email})
 
        if (!user) {
@@ -116,16 +105,27 @@ const verification = async(req, res) => {
             message: "user has already been verifield"
         })
        }
-       const savedOtp = await otpModel.findOne({ _id: user.Otp });
 
-       if (!savedOtp) {
-           return res.status(404).json({ message: 'OTP not found' });
-       }
-       await otpModel.deleteOne({ _id: savedOtp._id }); 
+       
+       if (!user.Otp) {
+        return res.status(404).json({ message: 'OTP not found' });
+    }
 
-       res.status(200).json({
-        message: `${user.userName} has been verified sucessfully `
-       })
+       if (!user.Otp === otp) {
+        return res.status(400).json({
+            message: "You have to input the correct OTP"
+        })
+       } else {
+        user.isVerified = true;
+        await user.save();
+
+        await userModel.updateOne({ email: user.email }, { Otp: null }, {new : true});
+
+        res.status(200).json({
+            message: `${user.userName} has been verified sucessfully `
+           })
+    }
+
     } catch (error) {
         res.status(500).json({
             message: error.message
@@ -133,7 +133,350 @@ const verification = async(req, res) => {
     }
 }
 
+const resentVerification = async(req,res) => {
+    try {
+        const {email} = req.body
+
+        const user = await userModel.findOne({email})
+
+        if (!user) {
+            return res.status(500).json({
+                message: "email not found"
+            })
+        }
+        if (user.isVerified === true) {
+            return res.status(500).json({
+            message: "user has already been verified"
+            })
+        }
+
+        const otp = user.Otp
+        
+
+        const OTP = otpGenerator.generate(5, {
+            digits: true,
+            lowerCaseAlphabets: false,
+            alphabets: false,
+            upperCaseAlphabets: false,
+            specialChars: false
+        }).replace(/\D/g, '');
+
+        user.Otp = OTP
+        
+           const token = jwt.sign({ email: user.email, userId: user._id }, process.env.Secret, { expiresIn: "333mins" });
+
+            const subject = ' Resend Verification'
+            const html = sendMail(OTP)
+            emailSender({
+                email: email,
+                subject,
+                html
+            })
+
+            user.save()
+
+            res.status(200).json({
+                message: `${user.email} the OTP ha been sent to you`,
+                data: user,
+                token: token
+            })
+   
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+}
+
+const login = async(req, res) => {
+    try {
+        const {email, password} = req.body
+
+        
+        if (!email && password) {
+            return res.status(404).json({
+                message: "No fileld is allowed to be empty"
+            })
+        }
+
+        const user = await userModel.findOne({email})
+        if (!user) {
+            return res.status(404).json({
+                message: "user not found"
+            })
+        }
+
+        const checkedPassword = bcrypt.compare(password, user.password)
+
+        if (!checkedPassword) {
+            return res.status(404).json({
+                message: "invalid password"
+            })
+        }
+
+        if (!user.isVerified === true) {
+            return res.status(500).json({
+                message: "user is not verified"
+            })
+        }
+
+        const islogin = await userModel.findByIdAndUpdate(user._id, {isLogin: true}, {new: true});
+
+        const token = jwt.sign({email: user.email, id: user._id,}, process.env.Secret, {expiresIn: "300mins"})
+        islogin.save()
+
+        res.status(200).json({
+            message: 'Login sucessfully',
+            data: user,
+            token: token
+        })
+
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+}
+
+const signOut = async(req, res) => {
+    try {
+        const id = req.params.id;
+
+        const userId = await userModel.findById(id)
+
+        const logout = await userModel.findByIdAndUpdate(userId, {isLogin: false}, {new: true}); 
+
+        if (!userId.isLogin === true) {
+            return res.status(200).json({
+                message: 'Logged not successfully'
+            })
+        }
+        logout.save()
+        res.status(200).json({
+            message: 'Logged out successfully',
+            data: logout
+        })
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+}
+
+const forgetPassword = async(req, res) => {
+    try {
+        const { email } = req.body
+
+        const user = await userModel.findOne({email})
+        if (!user) {
+            return res.status(500).json({
+                message: "user not found"
+            })
+        }
+
+        const token = jwt.sign({userId: user._id, user: user.email}, process.env.Secret, {expiresIn: "333mins"})
+
+        const subject = 'Link for Reset password'
+        const link = `localhost: 1987/resetPassword/${token}`
+        const html = await forgerMail(link)
+        emailSender({
+            email: email,
+            subject,
+            html
+        });
+        res.status(200).json({
+            message: 'Email sent successfully, check your Email to reset your Password'
+        })
+
+    } catch (error) {
+      res.status(500).json({
+        message: error.message
+      })
+    }
+}
+
+const resetPassword = async(req, res) => {
+    try {
+        const { token } = req.params;
+        const { password } = req.body;
+
+        if (!password) {
+        return res.status(404).json({
+            error: "Please enter a new password"
+        });
+        }
+
+        const decodedToken = jwt.verify(token, process.env.Secret);
+    
+        const userId = decodedToken.userId;
+    
+        const user = await userModel.findById(userId);
+        if (!user) {
+        return res.status(404).json({
+            message: "User not found"
+        });
+        }
+    
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, saltedRound);
+    
+        user.password = hashedPassword;
+        await user.save();
+    
+        res.status(200).json({
+        message: "Password reset successful"
+        });
+      
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+}
+
+const changePassword = async(req, res) => {
+    try {
+        const { password } = req.body;
+        const { id } = req.params;
+
+        const userPassword = await userModel.findById(id);
+
+        const salt = bcrypt.genSaltSync(10);
+        const hashedPassword = bcrypt.hashSync(password, salt);
+
+        const newPassword = await userModel.findByIdAndUpdate(userPassword, {password: hashedPassword}, {new: true});
+        if (!newPassword) {
+            res.status(400).json({
+                message: 'Failed to Change Password'
+            })
+        } else {
+            res.status(200).json({
+                data: userPassword
+            })
+        }
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })  
+    }
+}
+
+const allUsers = async(req, res) => {
+    try {
+        const users = await userModel.find()
+
+        if (users === 0) {
+            return res.status(500).json({
+                message: "There is no user found"
+            }) 
+        }
+
+         res.status(500).json({
+            message: "users available are" + users.length,
+            data: users
+        }) 
+        
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })  
+    }
+}
+
+const oneUser = async(req, res) => {
+    try {
+        const userId = req.params.id;
+
+        const user = await userModel.findById(userId)
+        if (user === 0) {
+            res.status(404).json({
+                message: 'No user found'
+            })
+        } else {
+            res.status(200).json({
+                message: 'The user Record',
+                data: user
+            })
+        }
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })  
+    }
+}
+
+const deleteUser = async (req, res) => {
+    try {
+      const userId = req.params.id
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return res.status(200).json({
+          message: `User with id: ${userId} not found`,
+        })
+      }
+      const deletedUser = await userModel.findByIdAndDelete(userId)
+      res.status(200).json({
+        message: 'User deleted successfully',
+        data: deletedUser
+      })
+  
+    } catch (error) {
+      res.status(500).json({
+        Error: error.message
+      })
+    }
+  }
+
+  const updateUser = async (req, res)=>{
+    try {
+        const {userName, email, isVerified} = req.body;
+        
+        const { id } = req.params;
+        const user = await userModel.findById(id);
+
+        if(!user) {
+            res.status(404).json({
+                message: 'User not Found'
+            })
+        } else {
+            const data = {
+                userName: userName || user.userName,
+                email: email || user.email,
+                isVerified: user.isVerified,
+            }
+
+            const updatedUser = await userModel.findByIdAndUpdate(user, data, {new: true});
+            if (!updatedUser) {
+                res.status(400).json({
+                    message: 'Could not update School Info'
+                })
+            } else {
+                res.status(200).json({
+                    message: 'Successfully Updated School Info',
+                    data: updatedUser
+                })
+            }
+        }
+        
+    } catch (error) {
+        res.status(500).json({
+            message: error.message
+        })
+    }
+};
+  
+
 module.exports = {
     SignIn,
-    verification
+    verification,
+    resentVerification,
+    login,
+    signOut,
+    forgetPassword,
+    resetPassword,
+    changePassword,
+    allUsers,
+    oneUser,
+    deleteUser,
+    updateUser
 }
