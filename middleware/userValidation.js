@@ -59,6 +59,27 @@ const validatePassword = (req, res, next) => {
     next();
 }
 
+const validateChangePassword = (req, res, next) => {
+    const schema = Joi.object({
+        password: Joi.string().required().messages({
+            "string.base": "Please provide a Password.",
+            "string.empty": "Please provide a Password.",
+        }),
+        oldPassword: Joi.string().required().messages({
+            "string.base": "Please provide a Password.",
+            "string.empty": "Please provide a Password.",
+        })
+    })
+    const {error} = schema.validate(req.body);
+
+    if(error) {
+        // Handle validator error
+        const errorMessage = error.details.map(details => details.message).join(',');
+        return res.status(400).json({error: errorMessage});
+    }
+    next();
+}
+
 const validatelogIn = (req, res, next) => {
     const schema = Joi.object({
         email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/).required().messages({
@@ -108,6 +129,7 @@ module.exports = {
     validateUser,
     validateEmail,
     validatePassword,
+    validateChangePassword,
     validatelogIn,
     validateUpdate
 };

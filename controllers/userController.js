@@ -5,7 +5,6 @@ const otpGenerator = require("otp-generator")
 const jwt = require("jsonwebtoken")
 const sendMail = require("../utils/emailTem")
 const forgerMail = require("../utils/forgetTem")
-const { use } = require("../Routers/userRout")
 const dotenv = require('dotenv').config();
 
 
@@ -214,7 +213,7 @@ const login = async(req, res) => {
             })
         }
 
-        if (!user.isVerified === true) {
+        if (!user.isVerified == true) {
             return res.status(500).json({
                 message: "user is not verified"
             })
@@ -277,7 +276,8 @@ const forgetPassword = async(req, res) => {
         const token = jwt.sign({userId: user._id, user: user.email}, process.env.Secret, {expiresIn: "333mins"})
 
         const subject = 'Link for Reset password'
-        const link = `localhost: 1987/resetPassword/${token}`
+        // const link = `https://chowfinderapp.onrender.com/#/resetpassword/${token}`;
+        const link = `https://localhost:1987/api/resetPassword/${token}`
         const html = await forgerMail(link)
         emailSender({
             email: email,
@@ -318,7 +318,7 @@ const resetPassword = async(req, res) => {
         }
     
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, saltedRound);
+        const hashedPassword = await bcrypt.hash(password, salt);
     
         user.password = hashedPassword;
         await user.save();
@@ -336,22 +336,44 @@ const resetPassword = async(req, res) => {
 
 const changePassword = async(req, res) => {
     try {
-        const { password } = req.body;
-        const { id } = req.params;
+        const { password, oldPassword } = req.body;
+        const { token } = req.params;
 
-        const userPassword = await userModel.findById(id);
+        if (!password || !oldPassword) {
+            return res.status(404).json({
+              message: "password must be entered"
+            });
+          }
 
+        const decodedToken = jwt.verify(token, process.env.Secret);
+        const userId = decodedToken.id;
+
+        const user = await userModel.findById(userId);
+        console.log(user);
+        if (!user) {
+            return res.status(404).json({
+                message: "user not found ooooo"
+              });
+        }
+        const matchPassword = await bcrypt.compare(oldPassword, user.password);
+    
+        if (!matchPassword) {
+            return res.status(401).json({
+              message: "password is incorrect."
+            });
+          }
+    
         const salt = bcrypt.genSaltSync(10);
         const hashedPassword = bcrypt.hashSync(password, salt);
 
-        const newPassword = await userModel.findByIdAndUpdate(userPassword, {password: hashedPassword}, {new: true});
+        const newPassword = await userModel.findByIdAndUpdate(userId, {password: hashedPassword}, {new: true});
         if (!newPassword) {
             res.status(400).json({
                 message: 'Failed to Change Password'
             })
         } else {
             res.status(200).json({
-                data: userPassword
+                data: newPassword
             })
         }
     } catch (error) {
@@ -360,6 +382,7 @@ const changePassword = async(req, res) => {
         })  
     }
 }
+
 
 const allUsers = async(req, res) => {
     try {
