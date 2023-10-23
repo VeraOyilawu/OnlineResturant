@@ -1,8 +1,7 @@
-const mongoose = require("mongoose");
+const mongoose = require("mongoose")
 
-
-const userSchema = new mongoose.Schema({
-    userName: {
+const resturantSchema = new mongoose.Schema({
+    resturantName: {
         type: String,
         required: true
     },
@@ -10,7 +9,18 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
+        // uniquwe: true
     },
+
+    address:{
+        type: String,
+        required: true
+    },
+
+    menue: [{
+        type: mongoose.Schema.Types.ObjectId,
+       ref: "menueDetails"
+    }],
 
     password: {
         type: String,
@@ -21,6 +31,12 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+
+    isAdmin: {
+        type: String,
+        default: false
+    },
+    
     isVerified: {
         type: String,
         default: false
@@ -35,7 +51,8 @@ const userSchema = new mongoose.Schema({
     }
 },  {timeStamp: true}
 )
-const userModel = mongoose.model("users", userSchema);
 
-module.exports = userModel;
+const userModel = mongoose.model("resturant", resturantSchema)
+
+module.exports = userModel
 

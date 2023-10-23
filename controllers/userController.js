@@ -1,4 +1,4 @@
-const userModel = require("../Models/userModel")
+const userModel = require("../Models/userModel");
 const emailSender = require("../utils/emailSender")
 const bcrypt = require("bcrypt")
 const otpGenerator = require("otp-generator")
@@ -8,11 +8,12 @@ const forgerMail = require("../utils/forgetTem")
 const dotenv = require('dotenv').config();
 
 
+
 const SignIn = async(req, res) => {
    try {
     const {userName, email, password, comfirmPassword, otp} = req.body
 
-    const Emailer = await userModel.findOne({email})
+    const Emailer = await userModel.findOne({email}).maxTimeMS(20000)
     if (Emailer) {
         return res.status(500).json({
             message: `${Emailer} is already registerd with this email`
@@ -386,7 +387,7 @@ const changePassword = async(req, res) => {
 
 const allUsers = async(req, res) => {
     try {
-        const users = await userModel.find()
+        const users = await userModel.find().maxTimeMS(20000); // 20 seconds timeout
 
         if (users === 0) {
             return res.status(500).json({
