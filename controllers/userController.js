@@ -11,7 +11,7 @@ const dotenv = require('dotenv').config();
 
 const SignIn = async(req, res) => {
    try {
-    const {userName, email, password, comfirmPassword, otp} = req.body
+    const {userName, email, phoneNumber, password, comfirmPassword, otp} = req.body
 
     const Emailer = await userModel.findOne({email}).maxTimeMS(20000)
     if (Emailer) {
@@ -41,6 +41,7 @@ const SignIn = async(req, res) => {
             const reqBody = await new userModel({
                 userName, 
                 email, 
+                phoneNumber,
                 password: hashPassword,
                 comfirmPassword: hashPassword,
                 Otp: OTP

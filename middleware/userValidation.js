@@ -7,6 +7,16 @@ const validateUser = (req, res, next) => {
             'string.pattern.base': 'This is a wrong email format',
             "string.empty": "Please provide an email ."
         }),
+
+        phoneNumber: Joi.string()
+        .length(11)
+        .pattern(/^\d+$/)
+        .required()
+        .messages({
+          "any.required": "Phone number is required.",
+          "string.length": "Phone number must be exactly 11 digits.",
+          "string.pattern.base": "Phone number must contain only numeric digits.",
+        }),
     
         password: Joi.string().required().messages({
             "string.base": "Please provide a Password.",
