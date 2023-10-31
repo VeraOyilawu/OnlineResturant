@@ -17,6 +17,10 @@ const resturantSchema = new mongoose.Schema({
         required: true
     },
 
+    image: {
+        type: String,
+    },
+
     menue: [{
         type: mongoose.Schema.Types.ObjectId,
        ref: "menueDetails"

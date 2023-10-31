@@ -6,7 +6,7 @@ const {validateUser, validateEmail, validatePassword, validateChangePassword, va
 
 const {userAuth} = require("../middleware/authentication")
 
-const route = express.Router()
+const route = express.Router()                                                                          
 
 route.post("/signIn", validateUser,  SignIn)
 route.post("/verification/:token", verification )

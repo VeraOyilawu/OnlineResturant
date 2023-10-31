@@ -11,12 +11,12 @@ const dotenv = require('dotenv').config();
 
 const SignIn = async(req, res) => {
    try {
-    const {userName, email, phoneNumber, password, comfirmPassword, otp} = req.body
+    const {firstName, lastName, email, phoneNumber, password, comfirmPassword, otp} = req.body
 
     const Emailer = await userModel.findOne({email}).maxTimeMS(20000)
     if (Emailer) {
         return res.status(500).json({
-            message: `${Emailer} is already registerd with this email`
+            message: `${Emailer} has already registerd.`
         })
     } else {
         const OTP = otpGenerator.generate(5, {
@@ -39,7 +39,8 @@ const SignIn = async(req, res) => {
            
 
             const reqBody = await new userModel({
-                userName, 
+                firstName,
+                lastName, 
                 email, 
                 phoneNumber,
                 password: hashPassword,
@@ -246,13 +247,14 @@ const signOut = async(req, res) => {
         const userId = await userModel.findById(id)
 
         const logout = await userModel.findByIdAndUpdate(userId, {isLogin: false}, {new: true}); 
+        logout.save()
 
         if (!userId.isLogin === true) {
             return res.status(200).json({
                 message: 'Logged not successfully'
             })
         }
-        logout.save()
+        
         res.status(200).json({
             message: 'Logged out successfully',
             data: logout
@@ -278,7 +280,7 @@ const forgetPassword = async(req, res) => {
         const token = jwt.sign({userId: user._id, user: user.email}, process.env.Secret, {expiresIn: "333mins"})
 
         const subject = 'Link for Reset password'
-        // const link = `https://chowfinderapp.onrender.com/#/resetpassword/${token}`;
+      
         const link = `https://localhost:1987/api/resetPassword/${token}`
         const html = await forgerMail(link)
         emailSender({
@@ -375,6 +377,7 @@ const changePassword = async(req, res) => {
             })
         } else {
             res.status(200).json({
+                message: 'Password Change sucessfully',
                 data: newPassword
             })
         }
@@ -436,7 +439,7 @@ const deleteUser = async (req, res) => {
       const user = await userModel.findById(userId);
       if (!user) {
         return res.status(200).json({
-          message: `User with id: ${userId} not found`,
+          message: `${user.userName} not found`,
         })
       }
       const deletedUser = await userModel.findByIdAndDelete(userId)
@@ -454,7 +457,7 @@ const deleteUser = async (req, res) => {
 
   const updateUser = async (req, res)=>{
     try {
-        const {userName, email, isVerified} = req.body;
+        const {firstName, lastName, email, phoneNumber} = req.body;
         
         const { id } = req.params;
         const user = await userModel.findById(id);
@@ -465,11 +468,11 @@ const deleteUser = async (req, res) => {
             })
         } else {
             const data = {
-                userName: userName || user.userName,
+                firstName: firstName || user.firstName,
+                lastName: lastName || user.lastName,
                 email: email || user.email,
-                isVerified: user.isVerified,
+                phoneNumber: phoneNumber || user.phoneNumber,
             }
-
             const updatedUser = await userModel.findByIdAndUpdate(user, data, {new: true});
             if (!updatedUser) {
                 res.status(400).json({

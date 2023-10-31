@@ -2,7 +2,8 @@ const Joi = require("@hapi/joi");
 
 const validateUser = (req, res, next) => {
     const schema = Joi.object({
-        userName: Joi.string().required().messages(),
+        firstName: Joi.string().required().messages(),
+        lastName: Joi.string().required().messages(),
         email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/).required().messages({
             'string.pattern.base': 'This is a wrong email format',
             "string.empty": "Please provide an email ."
@@ -114,7 +115,8 @@ const validatelogIn = (req, res, next) => {
 
 const validateUpdate = (req, res, next) => {
     const schema = Joi.object({
-        userName: Joi.string().messages(),
+        firstName: Joi.string().messages(),
+        lastName: Joi.string().messages(),
         email: Joi.string().pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/).messages({
             'string.pattern.base': 'This is a wrong email format',
         }),

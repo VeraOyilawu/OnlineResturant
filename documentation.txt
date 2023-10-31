@@ -1,83 +1,27 @@
-Documentation of Backend-side of ProgressPal
+Documentation of Backend-side 
 
-Backend Landing Page: https://progresspal-8rxj.onrender.com   // Get Method
-
-Basic Users.
-    1. Users also known as Schools.
-    2. Teachers and
-    3. Students
-
-
-We have the respective models for each of these users specified above.
-We have Different Functionalities such as:
-    1. OnBoarding for all Users: This is separated for each User(Schools, Teachers, and Students).
-    2. CRUD for Schools.
-    3. CRUD for Teachers.
-    4. CRUD for Students.
-
-Here are their different routes for the above mentioned functionalities.
-
-NOTE: The school Admin is responsible for sending a link of registration to the teachers by the emails submitted to them.
-NOTE: The Teachers register each student with a PinNumber of which they can later update their profile to change the password later on.
-
-
-DATA NEEDED FOR SCHOOL REGISTRATION
+DATA NEEDED FOR user REGISTRATION
 {
-    schoolName,
-    schoolEmail,
-    schoolAddress,
-    state,
-    country,
-    schoolLogo,
-    regNo,
-    password,
-    confirmPassword,
-    website
-}
-
-DATA NEEDED FOR TEACHER REGISTRATION
-{
-    teacherName,
-    teacherClass,
-    teacherAge,
-    teacherEmail,
-    teacherImage,
+    name,
+    email,
+    phoneNumber,
     password,
     confirmPassword
 }
 
-DATA NEEDED FOR STUDENT REGISTRATION
-{
-    studentName,
-    studentClass,
-    studentAge,
-    studentEmail,
-    password,
-    studentPassport
-}
+ONBOARDING FOR user:
+signIn: https://online-resturant.onrender.com/signIn                                // Post Method  
 
+Verify Email: https://online-resturant.onrender.com/Verification/:token                     // Post Method   
 
+Re-send Email Verification: https://online-resturant.onrender.com/resendverification                // Post Method
 
-DATA NEEDED FOR RESULTS
-{
-    subName1,
-    subTest1,
-    subExam1,
-    subTotal1,
-    resultTotal,
-    teachersRemark
-}
+Login: https://online-resturant.onrender.com/login                                          // Post Method  
 
+signOut: https://online-resturant.onrender.com/signOut/:id                                   // Post Method
 
+Change Password: https://online-resturant.onrender.com/changePassword/:token                   // Put Method
 
-ONBOARDING FOR SCHOOLS:
-signIn: https://online-resturant.onrender.com/progressPal/register                                // Post Method  DONE
-Verify Email: https://progresspal-8rxj.onrender.com/progressPal/verify/:token                       // Put Method   
-Re-send Email Verification: https://progresspal-8rxj.onrender.com/progressPal/re-verify                 // Put Method
-Login: https://progresspal-8rxj.onrender.com/progressPal/login                                          // Post Method  DONE
-signOut: https://progresspal-8rxj.onrender.com/progressPal/logout/:schoolId                                   // Post Method
-Change Password: https://progresspal-8rxj.onrender.com/progressPal/changePassword/:schoolId                   // Put Method
-Forgot Password: https://progresspal-8rxj.onrender.com/progressPal/forgot-password                      // Post Method
-Reset Password: https://progresspal-8rxj.onrender.com/progressPal/reset-password/:token             // Put Method
-Teacher Link: https://progresspal-8rxj.onrender.com/progressPal/teacherLink/:schoolId                         // Post Method
-School Teacher: https://progresspal-8rxj.onrender.com/progressPal/schoolTeachers/:schoolId              // Get Method
+Forgot Password: https://online-resturant.onrender.com/forgetPassword                     // Post Method
+
+Reset Password: https://online-resturant.onrender.com/resetPassword             // Put Method
